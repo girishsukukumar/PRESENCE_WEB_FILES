@@ -517,7 +517,7 @@ def get_transitions():
          return jsonify({"data": lines})
 
      # 1. Define your API key 
-    API_KEY = "AQ.Ab8RN6I2uUKVmz7nKkJPLzQTuCg6nl1dHZAI5mO8aBngI2DGzQ"
+    API_KEY = "yyyyyyyyyy"
 
      # 2. Initialize the GenAI Client
     client = genai.Client(api_key=API_KEY)
@@ -598,7 +598,7 @@ def get_history():
          return jsonify({"data": lines})
 
      # 1. Define your API key 
-    API_KEY = "AQ.Ab8RN6I2uUKVmz7nKkJPLzQTuCg6nl1dHZAI5mO8aBngI2DGzQ"
+    API_KEY = "xxxxxxxxxxxxx"
 
      # 2. Initialize the GenAI Client
     client = genai.Client(api_key=API_KEY)
