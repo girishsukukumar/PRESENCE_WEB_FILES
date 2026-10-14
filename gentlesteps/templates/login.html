@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Sign in | ISQUARED OT LABS (OPC) PVT LTD</title>
+  <style>
+    :root {
+      --panel: #ffffff;
+      --ink: #1b2430;
+      --muted: #5d6b7c;
+      --line: #c9d3de;
+      --navy: #002e82;      /* taken from the logo */
+      --red: #c1272d;       /* taken from the logo */
+      --accent: #002e82;
+      --accent-dark: #001f5c;
+      --error-bg: #fdecec;
+      --error-ink: #9b1c1c;
+    }
+    * { box-sizing: border-box; }
+    html, body { min-height: 100%; margin: 0; }
+    body {
+      display: flex; flex-direction: column; align-items: center; justify-content: center;
+      min-height: 100vh;
+      padding: 1.5rem;
+      color: var(--ink);
+      font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+      /* soft light-blue background so the navy/red logo stands out */
+      background:
+        radial-gradient(circle at 12% 18%, rgba(0, 46, 130, .10) 0, transparent 38%),
+        radial-gradient(circle at 88% 85%, rgba(193, 39, 45, .08) 0, transparent 36%),
+        linear-gradient(135deg, #eaf1fb 0%, #f7f9fc 55%, #e6edf7 100%);
+      background-attachment: fixed;
+    }
+    main {
+      width: 100%; max-width: 420px;
+      background: var(--panel);
+      border: 1px solid var(--line);
+      border-top: 5px solid var(--navy);
+      border-radius: 10px;
+      padding: 2rem 2rem 2.25rem;
+      box-shadow: 0 10px 30px rgba(0, 31, 92, .12);
+    }
+    .brand { text-align: center; margin-bottom: 1.5rem; }
+    .brand img { width: 100%; max-width: 320px; height: auto; display: inline-block; }
+    .divider { height: 1px; background: var(--line); margin: 0 0 1.5rem; border: 0; }
+    h1 { margin: 0 0 .25rem; font-size: 1.4rem; color: var(--navy); }
+    p.lead { margin: 0 0 1.5rem; color: var(--muted); }
+    label { display: block; margin-bottom: .35rem; font-weight: 600; font-size: .95rem; }
+    input {
+      width: 100%; padding: .65rem .75rem; margin-bottom: 1.1rem;
+      font: inherit; color: inherit;
+      border: 1px solid var(--line); border-radius: 6px; background: #fff;
+    }
+    input:focus-visible, button:focus-visible {
+      outline: 3px solid rgba(0, 46, 130, .30); outline-offset: 1px; border-color: var(--accent);
+    }
+    button {
+      width: 100%; padding: .7rem; font: inherit; font-weight: 600;
+      color: #fff; background: var(--accent);
+      border: 0; border-radius: 6px; cursor: pointer;
+    }
+    button:hover { background: var(--accent-dark); }
+    .error {
+      margin-bottom: 1.1rem; padding: .65rem .75rem;
+      background: var(--error-bg); color: var(--error-ink);
+      border-radius: 6px; font-size: .95rem;
+    }
+    footer {
+      margin-top: 1.25rem; text-align: center;
+      font-size: .8rem; color: var(--muted);
+    }
+  </style>
+</head>
+<body>
+  <main>
+    <div class="brand">
+      <img src="{{ url_for('static', filename='logo.png') }}" alt="ISQUARED OT LABS (OPC) PVT LTD">
+    </div>
+    <hr class="divider">
+
+    <h1>Sign in</h1>
+    <p class="lead">Enter your login name and password.</p>
+
+    {% if error %}
+    <div class="error" role="alert">{{ error }}</div>
+    {% endif %}
+
+    <form method="post" action="{{ url_for('login') }}">
+      <label for="username">Login name</label>
+      <input id="username" name="username" type="text" autocomplete="username" required autofocus>
+
+      <label for="password">Password</label>
+      <input id="password" name="password" type="password" autocomplete="current-password" required>
+
+      <button type="submit">Sign in</button>
+    </form>
+  </main>
+
+  <footer>&copy; ISQUARED OT LABS (OPC) PVT LTD</footer>
+</body>
+</html>
+
