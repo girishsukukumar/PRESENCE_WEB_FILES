@@ -41,7 +41,7 @@ def on_message(client, userdata, msg):
     try:
 
         data = json.loads(msg.payload.decode())
-        #print(data)
+        print(data)
 
 
         status = data.get("status", "")
@@ -50,7 +50,8 @@ def on_message(client, userdata, msg):
 
            room =  data.get("sensor_room","") 
            status = data.get("status", "") 
-           currentDateTime = datetime.now().strftime("%B %d, %Y at %I:%M %p")
+           #currentDateTime = datetime.now().strftime("%B %d, %Y at %I:%M %p")
+           currentDateTime = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
 
            if (room == "Toilet-1"):
                if (status == "DETECTED"):
@@ -69,7 +70,7 @@ def on_message(client, userdata, msg):
                   BedRoomTimings.append("BedRoom")
                   BedRoomTimings.append(currentDateTime)
                elif (status == "NOT_DETECTED"):
-                  if BedRoomTiming:
+                  if BedRoomTimings:
                      BedRoomTimings.append(currentDateTime)
                      AppendToLogFile(BedRoomTimings)
                   BedRoomTimings = []

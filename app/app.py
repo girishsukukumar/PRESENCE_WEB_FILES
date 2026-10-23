@@ -15,6 +15,8 @@ import random
 import csv
 import os
 
+import pandas as pd
+from datetime import timedelta
 
 from google import genai
 from google.genai import types
@@ -43,17 +45,11 @@ PORT = 8883
 #TOPIC = "PRESENCE/LD2410/STATUS"
 
 TOPIC = "PRESENCE/BLR/MANSARVOVAR/A4562/STATUS"
-
 TOPIC2 = "PRESENCE/BLR/MANSARVOVAR/A4562/ALERT"
 
 
-
-
-
 DETECTION_STATUSES = ["DETECTED", "NOT_DETECTED"]
-
 CONNECTIVITY_STATUSES = ["OFF_LINE", "ON_LINE", "KEEP_ALIVE"]
-
 MAX_MESSAGES = 200
 
 
@@ -517,7 +513,7 @@ def get_transitions():
          return jsonify({"data": lines})
 
      # 1. Define your API key 
-    API_KEY = "yyyyyyyyyy"
+    API_KEY = "DUMMY"
 
      # 2. Initialize the GenAI Client
     client = genai.Client(api_key=API_KEY)
@@ -582,11 +578,90 @@ def get_transitions():
 
 
 
+def summarize_room_data(csv_file_path):
+    # Load data without headers
+    df = pd.read_csv(csv_file_path, header=None)
+    df = df.iloc[:, :3]  # Take first 3 columns
+    df.columns = ['Room', 'Start_Time', 'End_Time']
+    
+    # Pandas parses ISO format natively and perfectly without needing format strings
+    df['Start_Time'] = pd.to_datetime(df['Start_Time'])
+    df['End_Time'] = pd.to_datetime(df['End_Time'])
+    
+    # Calculate duration of each stay
+    df['Duration'] = df['End_Time'] - df['Start_Time']
+    
+    # 1. Total entries per room
+    entries_per_room = df['Room'].value_counts()
+    busiest_room = entries_per_room.idxmax()
+    busiest_entries = entries_per_room.max()
+    
+    # 2. Max Stay (longest single stay duration)
+    max_stay_row = df.loc[df['Duration'].idxmax()]
+    max_stay_room = max_stay_row['Room']
+    max_stay_duration = max_stay_row['Duration']
+    
+    # 3. Total duration and time share per room
+    total_duration_per_room = df.groupby('Room')['Duration'].sum()
+    total_overall_time = total_duration_per_room.sum()
+    
+    if total_overall_time.total_seconds() > 0:
+        time_share_percent = (total_duration_per_room / total_overall_time) * 100
+    else:
+        time_share_percent = total_duration_per_room * 0
+    
+    # Helper to format timedelta nicely
+    def format_td(td):
+        total_seconds = int(td.total_seconds())
+        hours = total_seconds // 3600
+        minutes = (total_seconds % 3600) // 60
+        seconds = total_seconds % 60
+        return f"{hours:02d}h {minutes:02d}m {seconds:02d}s"
+
+    # 4. Room Totals & Time Share string construction
+    room_totals_parts = []
+    for room in total_duration_per_room.index:
+        dur_str = format_td(total_duration_per_room[room])
+        pct_str = f"{time_share_percent[room]:.2f}%"
+        room_totals_parts.append(f"{room}: {dur_str} ({pct_str})")
+    
+    room_totals_str = " | ".join(room_totals_parts)
+    
+    # 5. Transitions handling
+    transitions = df['Room'].tolist()
+    total_transitions = len(transitions) - 1
+    
+    if total_transitions < 10:
+        transitions_str = " -> ".join(transitions)
+    else:
+        transitions_str = f"High frequency of movement across {total_transitions} recorded transitions."
+
+    # 6. Format final output matching your exact template
+    output = f"""- Busiest: {busiest_room} ({busiest_entries} entries)
+- Max Stay: {max_stay_room} ({format_td(max_stay_duration)})
+- Room Totals & Time Share: {room_totals_str}
+- Transitions: {transitions_str}"""
+
+    return output
 
 
 @app.route("/api/history", methods=["GET"])
-
 def get_history():
+
+    CSVfileName = datetime.now().strftime("%Y_%m_%d")  + ".csv"
+
+    if os.path.isfile(CSVfileName):
+         lines = summarize_room_data(CSVfileName)
+         return jsonify({"data": lines})
+    else:
+         lines = ["History of movements is not yet available for the day"]
+         return jsonify({"data": lines})
+
+    return 
+
+
+
+def get_old_history():
     
     CSVfileName = datetime.now().strftime("%Y_%m_%d")  + ".csv"
 
@@ -598,7 +673,7 @@ def get_history():
          return jsonify({"data": lines})
 
      # 1. Define your API key 
-    API_KEY = "xxxxxxxxxxxxx"
+    API_KEY = "Dummy"
 
      # 2. Initialize the GenAI Client
     client = genai.Client(api_key=API_KEY)
@@ -625,16 +700,22 @@ def get_history():
     # --- TOKEN-OPTIMIZED PROMPT ---
     # We use strict instructions to stop the model from rambling.
 
-    prompt = """Analyze the uploaded CSV.
-                 - Provide  summary of room by room transitions
-                 - In case the number of transations are less, list all of them otherwise provide a summary 
-                 - Provide a summary using this exact format:
-                 - Busiest: [Room Name] ([Total Entries] entries)
-                 - Max Stay: [Room Name] ([Duration])
-                 - Room Totals: [Room]: [Duration] | [Room]: [Duration]
-                 Constraint: Rely strictly on data facts. No introductory words, no greetings, no 
-                 conversational padding.
-                 Also prepare summary of the percentage time spend in each room against the total """
+    prompt = """
+              Analyze the uploaded CSV by writing and executing a Python script to calculate the exact metrics. Do not estimate or calculate manually.
+
+              Calculate:
+              1. Total entries per room.
+              2. Duration of each stay and total duration per room.
+              3. Percentage of total time spent in each room against the total duration.
+              4. Room-by-room transitions (if total transitions < 10, list chronologically; otherwise summarize patterns).
+              Provide the final output strictly using this exact format, with no introductory text, greetings, or conversational padding:
+
+              - Busiest: [Room Name] ([Total Entries] entries)
+              - Max Stay: [Room Name] ([Duration])
+              - Room Totals & Time Share: [Room]: [Duration] ([Percentage]%) | [Room]: [Duration] ([Percentage]%)
+              - Transitions: [List all transitions OR high-level transition summary based on volume]
+              Constraint: Rely strictly on the Python script's calculated facts. Output only the requested bullet points."""
+
 
     #print("Processing file analysis via Gemini...")
     # 5. Send both the prompt and the file object in the contents array
